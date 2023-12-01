@@ -19,12 +19,19 @@
       (slurp cache-file))))
 
 ;; day 1 part 2
-;; not solved - works on example input but not real input
+;; notes:
+;; positive lookahead: https://www.regular-expressions.info/lookaround.html, (?=<pattern>)
+;; so eg oneight = "one" "eight" instead of just "one"
+(comment
+  (re-seq #"one|eight" "oneight") ;; ("one")
+  (re-seq #"(?=(one|eight))" "oneight")) ;; (["" "one"] ["" "eight"])
+
 (let [patterns ["[0-9]" "one" "two" "three" "four" "five" "six" "seven" "eight" "nine"]]
   (->> (get-input "1")
        (map (fn [line]
               (->> line
-                   (re-seq (re-pattern (string/join "|" patterns)))
+                   (re-seq (re-pattern (format "(?=(%s))" (string/join "|" patterns))))
+                   (map last)
                    ((juxt first last))
                    (map (fn [num]
                           (let [index (.indexOf patterns num)]
