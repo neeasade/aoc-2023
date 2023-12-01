@@ -1,0 +1,7 @@
+It's [[https://adventofcode.com/][advent of code]], in clojure (via [[https://babashka.org/][babashka]])
+
+howto:
+
+- ~bb nrepl-server~
+- ~(cider-connect-clj '(:host "localhost" :port 1667))~
+- [[./milk and cookies.clj][🍪🥛🍪🍪]]
