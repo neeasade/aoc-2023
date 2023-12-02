@@ -18,6 +18,21 @@
       (string/split-lines (slurp cache-file))
       (slurp cache-file))))
 
+;; day 2 part 2
+(defn line-to-num [line]
+  (->> line
+       (re-seq #"(\d+) (red|green|blue)")
+       (map (fn [[_ amount color]]
+              {(keyword color) [(Integer/parseInt amount)]}))
+       (apply merge-with concat)
+       (vals)
+       (map #(first (sort > %)))
+       (apply *)))
+
+(->> (get-input "2")
+     (map line-to-num)
+     (apply +))
+
 ;; day 2 part 1
 (defn line-to-num [line]
   ;; return the game id (if matching), or 0
