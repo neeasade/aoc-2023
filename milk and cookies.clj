@@ -18,13 +18,36 @@
       (string/split-lines (slurp cache-file))
       (slurp cache-file))))
 
+;; day 2 part 1
+(defn line-to-num [line]
+  ;; return the game id (if matching), or 0
+  (let [id (Integer/parseInt (re-find #"\d+" line))
+        seen (->> line
+                  (re-seq #"(\d+) (red|green|blue)")
+                  (map (fn [[_ amount color]]
+                         {(keyword color) [(Integer/parseInt amount)]}))
+                  (apply merge-with concat))]
+
+    (let [{:keys [red green blue]} seen]
+      (if (or             ; only 12 red cubes, 13 green cubes, and 14 blue cubes
+           (some #(> % 12) red)
+           (some #(> % 13) green)
+           (some #(> % 14) blue))
+        0 id
+        ))))
+
+(->> (get-input "2")
+     (map line-to-num)
+     (apply +))
+
 ;; day 1 part 2
 ;; notes:
 ;; positive lookahead: https://www.regular-expressions.info/lookaround.html, (?=<pattern>)
-;; so eg oneight = "one" "eight" instead of just "one"
 (comment
+  ;; so eg oneight = "one" "eight" instead of just "one"
   (re-seq #"one|eight" "oneight") ;; ("one")
-  (re-seq #"(?=(one|eight))" "oneight")) ;; (["" "one"] ["" "eight"])
+  (re-seq #"(?=(one|eight))" "oneight") ;; (["" "one"] ["" "eight"])
+  (re-seq #"(?=one|eight)" "oneight")) ;; ("" "")
 
 (let [patterns ["[0-9]" "one" "two" "three" "four" "five" "six" "seven" "eight" "nine"]]
   (->> (get-input "1")
@@ -42,7 +65,6 @@
 
 ;; day 1 part 1
 (->> (get-input 1)
-
      (map (fn [line]
             (->> line
                  (re-seq #"[0-9]")
