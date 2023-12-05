@@ -2,6 +2,8 @@
 
 (require '[clojure.java.shell :as shell]
          '[clojure.string :as string]
+         '[clojure.math :as math]
+         '[clojure.set :as set]
          '[babashka.fs :as fs])
 
 (defn get-input [day & split?]
@@ -17,6 +19,60 @@
     (if split?
       (string/split-lines (slurp cache-file))
       (slurp cache-file))))
+
+;; day 4 part 2
+
+;; todo
+(re-seq #"\d+" " 82 41 56 54 18 62 29 55 34 20 ")
+
+;; day 4 part 1
+(->> (get-input "4")
+     (map (fn [line]
+            (let [[_ p1 p2] (string/split line #"[:|]" )
+                  s1 (->> (string/split p1 #" ") (keep parse-long) (set))
+                  s2 (->> (string/split p2 #" ") (keep parse-long) (set))]
+              (if (empty? (set/intersection s1 s2)) 0
+                  (math/pow 2 (dec (count (set/intersection s1 s2)))))
+              p1
+              ))
+          )
+     ;; (apply +)
+     first
+     )
+
+;; day 3
+
+(let [input (get-input "3example")
+      width (count (first input))
+      height (count input)
+      points (keep-indexed
+              (fn [x line]
+                (keep-indexed
+                 (fn [y char]
+                   (when-not (= char ".")
+                     {:location [x y]
+                      :val char}))
+                 (re-seq #"." line)))
+              (get-input "3example"))
+      points (flatten points)
+      ]
+
+  (for [x (range height)
+        y (range width)
+        ]
+    (keep
+     (fn [coords]
+       (first
+        (filter (fn [{:keys [location]}]
+                  (= location coords))
+                points))
+       )
+     (get-surrounding-cells x y))
+    ;; [x y]
+    )
+
+  ;; points
+  )
 
 ;; day 2 part 2
 (defn line-to-num [line]
