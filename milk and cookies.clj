@@ -6,8 +6,12 @@
          '[clojure.set :as set]
          '[babashka.fs :as fs])
 
+
+(def AOC_SESSION (string/trim (:out (shell/sh "bash" "-i" "-c" "echo $AOC_SESSION"))))
+
 (defn get-input [day & split?]
   (let [split? (if (nil? split?) true false)
+        ;; quicklink: ~/.cache/aoc
         cache-file (fs/file (fs/xdg-cache-home) (format "aoc/%s.txt" day))]
     (fs/create-dirs (fs/parent cache-file))
     (when-not (fs/exists? cache-file)
@@ -15,15 +19,11 @@
             (:out (shell/sh
                    "curl" (format "https://adventofcode.com/2023/day/%s/input" day)
                    "-X" "GET"
-                   "-H" (format "Cookie: session=%s" (System/getenv "AOC_SESSION")))))) ; https://github.com/wimglenn/advent-of-code-wim/issues/1
+                   "-H" (format "Cookie: session=%s" AOC_SESSION))))) ; https://github.com/wimglenn/advent-of-code-wim/issues/1
     (if split?
       (string/split-lines (slurp cache-file))
       (slurp cache-file))))
 
-;; day 4 part 2
-
-;; todo
-(re-seq #"\d+" " 82 41 56 54 18 62 29 55 34 20 ")
 
 ;; day 4 part 1
 (->> (get-input "4")
@@ -33,46 +33,49 @@
                   s2 (->> (string/split p2 #" ") (keep parse-long) (set))]
               (if (empty? (set/intersection s1 s2)) 0
                   (math/pow 2 (dec (count (set/intersection s1 s2)))))
-              p1
-              ))
-          )
+              p1)))
      ;; (apply +)
-     first
-     )
+     first)
 
 ;; day 3
 
-(let [input (get-input "3example")
+;; https://stackoverflow.com/questions/3262195/compact-clojure-code-for-regular-expression-matches-and-their-position-in-string
+(defn re-pos [re s]
+  (loop [m (re-matcher re s)
+         res {}]
+    (if (.find m)
+      (recur m (assoc res (.start m) (.group m)))
+      res)))
+
+(comment
+  (re-pos #"\d+" "...34...5") ;; {3 "34", 8 "5"}
+  (re-pos #"\d+" "......")) ;; {}
+
+;; part 1
+(let [input (get-input "3")
       width (count (first input))
-      height (count input)
-      points (keep-indexed
-              (fn [x line]
-                (keep-indexed
-                 (fn [y char]
-                   (when-not (= char ".")
-                     {:location [x y]
-                      :val char}))
-                 (re-seq #"." line)))
-              (get-input "3example"))
-      points (flatten points)
-      ]
+      pad (apply str (repeat width \.))
+      input `[~pad ~@input ~pad]
+      ;; ... lmfao
+      input (map (fn [line] (str "." line ".")) input)]
 
-  (for [x (range height)
-        y (range width)
-        ]
-    (keep
-     (fn [coords]
-       (first
-        (filter (fn [{:keys [location]}]
-                  (= location coords))
-                points))
-       )
-     (get-surrounding-cells x y))
-    ;; [x y]
-    )
-
-  ;; points
-  )
+  (->> (partition 3 1 input)
+       (map (fn [[prev cur next]]
+              (->> (re-pos #"\d+" cur)
+                   (keep (fn [[pos match]]
+                           ;; (prn cur)
+                           ;; (prn pos)
+                           ;; (prn match)
+                           (let [search-string (str (subs prev (dec pos) (+ (inc pos) (count match)))
+                                                    (nth cur (dec pos))
+                                                    (nth cur (+ pos (count match)))
+                                                    (subs next (dec pos) (+ (inc pos) (count match))))]
+                             (when-not (every? (partial = \.) search-string)
+                               match
+                               )))))))
+       (flatten)
+       (map #(Integer/parseInt %))
+       (apply +)))
 
 ;; day 2 part 2
 (defn line-to-num [line]
@@ -100,7 +103,7 @@
                   (apply merge-with concat))]
 
     (let [{:keys [red green blue]} seen]
-      (if (or             ; only 12 red cubes, 13 green cubes, and 14 blue cubes
+      (if (or          ; only 12 red cubes, 13 green cubes, and 14 blue cubes
            (some #(> % 12) red)
            (some #(> % 13) green)
            (some #(> % 14) blue))
